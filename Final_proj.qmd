@@ -1,0 +1,389 @@
+---
+title: "STATS proj Qianxi Zhang"
+format:
+  html:
+    embed-resources: true
+editor: visual
+---
+
+
+
+```{r}
+# library(dplyr)
+# library(readr)
+#append all dataset of medicare
+
+# new_directory <- "D:/UMich/STAT506/final_proj/data"
+# setwd(new_directory)
+# medicare_13_21 <- suppressWarnings(list.files(path="D:/UMich/STAT506/final_proj/raw", full.names = TRUE) %>%
+#   lapply(read_csv) %>%
+#   bind_rows )
+# 
+# write.csv(medicare_13_21, "medicare_13_21.csv", row.names = FALSE)
+```
+
+GDP per capita from BEA
+
+https://apps.bea.gov/iTable/?reqid=70&step=30&isuri=1&major_area=0&area=xx&year=2018,2017,2016,2015,2014,2013,2012,2011,2010,2009,2008,2007,2006,2005,2004,2003,2002,2001,2000,1999,1998,1997,1996&tableid=21&category=421&area_type=0&year_end=-1&classification=non-industry&state=0&statistic=3&yearbegin=-1&unit_of_measure=levels
+
+```{r}
+#' #population data
+#' 
+#' 
+#' #' function to select specified columns for each csv files in the folder
+#' #'
+#' #' @param input_path folder path containing the csv files
+#' #' @param column_name selected column names (vector)
+#' #'
+#' #' @return
+#' #' @export
+#' #'
+#' #' @examples
+#' select_columns <- function(input_path, column_names) {
+#'   setwd(input_path)
+#'   all_csv <- list.files(input_path, pattern = "\\.csv$", full.names = TRUE)
+#'   #get the names for df from file path
+#'   file_names <- sapply(all_csv, function(x) gsub('\\.csv$', '', basename(x)))
+#' 
+#'   output_df <- list()
+#'   for (i in seq_along(all_csv)) {
+#'     file_i<- read.csv(all_csv[i])
+#'     selected_columns <- file_i[, column_names, drop = FALSE]
+#'     output_df [[file_names[i]]] <- selected_columns
+#'   }
+#' 
+#'   list2env(output_df , envir = .GlobalEnv) #output dataframes to environment
+#'   return(output_df )
+#' }
+#' 
+#' 
+#' input_path <- "D:/UMich/STAT506/final_proj/data/age65/"
+#' column_names <- c('GEO_ID','NAME','S0103_C01_001E', 'S0103_C02_001E')
+#' age65_list <- select_columns(input_path, column_names)
+#' #converge number to numeric values
+#' lapply(age65_list, function(df) {
+#'   df %>%  suppressWarnings( mutate_at(c(3, 4), as.numeric)) %>%
+#'       rename('population_total'='S0103_C01_001E', 'population_65' = 'S0103_C02_001E')})
+```
+
+\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\-\--11.30
+
+```{r}
+library(dplyr)
+library(readr)
+# ACS population data for 2013, 2015, and 2021
+acs_2013 <- read.csv("D:/UMich/STAT506/final_proj/data/age65/ACSST1Y2013.S0103-Data.csv")
+acs_2015 <- read.csv("D:/UMich/STAT506/final_proj/data/age65/ACSST1Y2015.S0103-Data.csv")
+acs_2021 <- read.csv("D:/UMich/STAT506/final_proj/data/age65/ACSST1Y2021.S0103-Data.csv")
+
+
+# Real Personal Index data
+rpi_data <- read.csv("D:/UMich/STAT506/final_proj/data/economics_data/SARPI_STATE_2008_2021.csv")
+
+# load poverty data
+poverty_2013 <- read.csv("D:/UMich/STAT506/final_proj/data/poverty/ACSST1Y2013.S1701-Data.csv")
+poverty_2014 <- read.csv("D:/UMich/STAT506/final_proj/data/poverty/ACSST1Y2014.S1701-Data.csv")
+poverty_2015 <- read.csv("D:/UMich/STAT506/final_proj/data/poverty/ACSST1Y2015.S1701-Data.csv")
+poverty_2016 <- read.csv("D:/UMich/STAT506/final_proj/data/poverty/ACSST1Y2016.S1701-Data.csv")
+poverty_2017 <- read.csv("D:/UMich/STAT506/final_proj/data/poverty/ACSST1Y2017.S1701-Data.csv")
+poverty_2018 <- read.csv("D:/UMich/STAT506/final_proj/data/poverty/ACSST1Y2018.S1701-Data.csv")
+
+
+# Medicare data
+medicare_2013 <- read.csv("D:/UMich/STAT506/final_proj/raw/MUP_PHY_R19_P04_V10_D13_Geo.csv")
+medicare_2014 <- read.csv("D:/UMich/STAT506/final_proj/raw/MUP_PHY_R19_P04_V10_D14_Geo.csv")
+medicare_2015 <- read.csv("D:/UMich/STAT506/final_proj/raw/MUP_PHY_R19_P04_V10_D15_Geo.csv")
+medicare_2016 <- read.csv("D:/UMich/STAT506/final_proj/raw/MUP_PHY_R19_P04_V10_D16_Geo.csv")
+medicare_2017 <- read.csv("D:/UMich/STAT506/final_proj/raw/MUP_PHY_R19_P04_V10_D17_Geo.csv")
+medicare_2018 <- read.csv("D:/UMich/STAT506/final_proj/raw/MUP_PHY_R20_P04_V10_D18_Geo.csv")
+
+#control group
+state_c<-c("Texas","Florida","Wisconsin","Kansas","Tennessee","Mississippi","Georgia")
+
+state_t <-c("Oregon",
+"Washington",
+"California",
+"North Dakota",
+"Iowa",
+"Illinois",
+"Ohio",
+"Pennsylvania")
+
+```
+
+```{r}
+#process medicare data
+
+library(dplyr)
+
+#' Title process of medicare data to panel data
+#'
+#' @param data name of medicare data
+#' @param  year_input year of medicare data
+#' @param state_c control state
+#' @param state_t treatment state
+#'
+#' @return
+#' @export
+#'
+#' @examples
+process_medicare_data <- function(data, year_input, state_c, state_t) {
+  medi_df <- data %>%
+    filter(Rndrng_Prvdr_Geo_Desc %in% c(state_c, state_t)) %>%
+    mutate(year =  year_input) %>% #add a column to indicate year
+    select(-Rndrng_Prvdr_Geo_Lvl,-Rndrng_Prvdr_Geo_Cd)
+  
+  return(medi_df)
+}
+
+medicare_2013 <- process_medicare_data(medicare_2013, 2013, state_c, state_t)
+medicare_2014 <- process_medicare_data(medicare_2014, 2014, state_c, state_t)
+medicare_2015 <- process_medicare_data(medicare_2015, 2015, state_c, state_t)
+medicare_2016 <- process_medicare_data(medicare_2016, 2016, state_c, state_t)
+medicare_2017 <- process_medicare_data(medicare_2017, 2017, state_c, state_t)
+medicare_2018 <- process_medicare_data(medicare_2018, 2018, state_c, state_t)
+
+#HCPCS code relevant  with ACA expansion
+HPCS_code <- c(99201:99215, 99241:99245, 99281:99285, 99221:99223, 99231:99233, 99238:99239, 
+  c(59400, 59510), c(59425:59426, 99460:99463), c(90791:90792, 90832:90838, 90853),
+  c(97110:97124, 97150, 97530:97535, 92507:92508, 92521:92524),
+  c(80048, 85025, 85027, 80061), 
+  c(99381:99387, 99391:99397, 99406:99407), 
+  c(99381:99385, 99391:99395, 92002:92014))
+
+
+#necessary medicare data from 2013-2016 of selected group
+medicare <- rbind(medicare_2013,medicare_2014,medicare_2015,medicare_2016,medicare_2017,medicare_2018) %>%
+    mutate(HCPCS_Cd = as.numeric(HCPCS_Cd))%>%
+  filter(HCPCS_Cd %in% HPCS_code) %>%
+  filter(Place_Of_Srvc == 'F')
+
+
+```
+
+```{r}
+#process economic data
+
+library(tidyr)
+
+# Melt the dataset into panel data format
+rpi_data <-
+  
+  gather(rpi_data, key = "X", value = "Value", X2008:X2021) %>%
+  mutate(X = as.numeric(substr(X, 2, nchar(X)))) %>%
+    filter(GeoName %in% c(state_c, state_t)) %>%
+    rename('RPI' = 'Value', "year"='X') %>%
+ select(-Description,-TableName, -Unit, -GeoFIPS,-LineCode,-Region,-IndustryClassification) 
+  
+  
+```
+
+```{r}
+#process poverty data
+
+
+#' Title process of poverty data to panel data
+#'
+#' @param data name of poverty data
+#' @param  year_input year of poverty data
+#' @param state_c control state
+#' @param state_t treatment state
+#'
+#' @return
+#' @export
+#'
+#' @examples
+process_poverty_data <- function(data,  year_input, state_c, state_t) {
+  p_df <- data %>%
+    filter(NAME %in% c(state_c, state_t)) %>%
+    select(c(NAME, S1701_C03_001E,S1701_C03_005E))%>%
+    mutate(Year =  year_input) %>%
+    rename('all_percent_below_poverty_level' = 'S1701_C03_001E', 'age65_percent_below_poverty' = 'S1701_C03_005E')
+  
+  return(p_df)
+}
+
+
+
+poverty_2013 <- process_poverty_data(poverty_2013, 2013, state_c, state_t)
+poverty_2014 <- process_poverty_data(poverty_2014, 2014, state_c, state_t)
+poverty_2015 <- process_poverty_data(poverty_2015, 2015, state_c, state_t)
+poverty_2016 <- process_poverty_data(poverty_2016, 2016, state_c, state_t)
+poverty_2017 <- process_poverty_data(poverty_2017, 2017, state_c, state_t)
+poverty_2018 <- process_poverty_data(poverty_2018, 2018, state_c, state_t)
+
+poverty <- rbind(poverty_2013,poverty_2014,poverty_2015,poverty_2016,poverty_2017,poverty_2018) #necessary medicare data from 2013-2016 of selected group
+
+
+```
+
+
+```{r}
+#join all datasets 
+library(dplyr)
+
+df <- medicare%>%
+  left_join(poverty,  by = c("Rndrng_Prvdr_Geo_Desc" = 'NAME', 'year'= 'Year')) %>%
+  left_join(rpi_data, by = c("Rndrng_Prvdr_Geo_Desc" = 'GeoName', 'year'= 'year')) %>%
+  rename('state'='Rndrng_Prvdr_Geo_Desc')
+
+
+
+
+#act_year:implement year of expansion of each state
+df <- df %>%
+  mutate(
+  act_year= case_when(
+    state %in% c("Oregon",
+"Washington",
+"California",
+"North Dakota",
+"Iowa",
+"Illinois",
+"Ohio") ~ 2014,
+state %in% c("Pennsylvania","Idiana") ~2015
+  )) %>%
+  mutate(treat = case_when(
+    act_year<= year ~ 1,
+    TRUE ~ 0
+  ))
+
+
+save_df <- "D:/UMich/STAT506/final_proj/data/processed_data.csv"
+write.csv(df, file = save_df, row.names = FALSE)
+
+```
+
+```{r}
+#first group by state and then join other data
+
+df_sum_HCPCS <- medicare %>%
+    mutate(HCPCS_Cd = as.numeric(HCPCS_Cd))%>%
+  filter(!is.na(HCPCS_Cd) & is.numeric(as.numeric(HCPCS_Cd)))%>%
+  rename('state'='Rndrng_Prvdr_Geo_Desc')  %>%
+  group_by(state,year) %>%
+  
+  summarise(across(where(is.numeric), sum)) %>%
+    ungroup() 
+
+df_sum_HCPCS <- df_sum_HCPCS %>%
+  left_join(poverty,  by = c("state" = 'NAME', 'year'= 'Year')) %>%
+  left_join(rpi_data, by = c("state" = 'GeoName', 'year'= 'year')) 
+
+
+
+#act_year:implement year of expansion of each state
+df_sum_HCPCS  <- df_sum_HCPCS  %>%
+  mutate(
+  act_year= case_when(
+    state %in% c("Oregon",
+"Washington",
+"California",
+"North Dakota",
+"Iowa",
+"Illinois",
+"Ohio") ~ 2014,
+state %in% c("Pennsylvania","Idiana") ~2015
+  )) 
+
+
+df_sum_HCPCS  <- df_sum_HCPCS  %>%
+  group_by(state)%>%
+  mutate(treat = case_when(
+    act_year<= year ~ 1,
+    TRUE ~ 0
+  )) %>% ungroup()
+
+
+
+
+
+save_df_sum_HCPCS <- "D:/UMich/STAT506/final_proj/data/processed_data_sum_HCPCS.csv"
+
+write.csv(df_sum_HCPCS, file = save_df_sum_HCPCS, row.names = FALSE)
+
+```
+
+
+
+```{r}
+library(dplyr)
+library(ggplot2)
+library(cluster)
+
+variables_to_test <- c('Tot_Rndrng_Prvdrs', 'Tot_Benes', 'Tot_Srvcs', 'Tot_Bene_Day_Srvcs', 'Avg_Sbmtd_Chrg', 'Avg_Mdcr_Alowd_Amt', 'Avg_Mdcr_Pymt_Amt', 'Avg_Mdcr_Stdzd_Amt')
+
+
+hcpcs_codes <- unique(df$HCPCS_Cd)
+
+setwd('D:/UMich/STAT506/final_proj/graphs/')
+
+# k = 3
+for (variable in variables_to_test[2:4]) {
+  dfk <- df  
+  dfk$state <- as.factor(dfk$state) # categorical variables to factors
+  dfk$state_code <- as.numeric(as.factor(dfk$state))
+
+  cat("Cluster for:", variable)
+
+  df_kmeans <- dfk %>% select(state_code, year, variable)
+  set.seed(1)
+  k <- 3
+  
+  clusters <- kmeans(df_kmeans, centers = k)
+  dfk$cluster <- clusters$cluster
+  
+  k_p <- ggplot(dfk, aes_string(x = "year", y = variable, color = "as.factor(cluster)")) +
+    geom_point() +
+    facet_wrap(~state) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.1, size = 9.5)) + 
+
+
+    labs(title = paste("K-means Cluster:", variable),
+         x = "Year", y = variable)
+  
+  ggsave(paste0("Kmeans_Clustering_", variable, ".png"), plot = k_p, device = "png")
+  print(k_p)
+}
+
+
+
+
+
+# k = 2
+for (variable in variables_to_test[-c(2:4)]) {
+  dfk <- df  
+  dfk$state <- as.factor(dfk$state) # categorical variables to factors
+  dfk$state_code <- as.numeric(as.factor(dfk$state))
+
+  cat("Cluster for:", variable)
+  df_kmeans <- dfk %>% select(state_code, year, variable)
+
+  set.seed(1)
+  k <- 2
+  clusters <- kmeans(df_kmeans, centers = k)
+
+  dfk$cluster <- clusters$cluster
+  k_p <- ggplot(dfk, aes_string(x = "year", y = variable, color = "as.factor(cluster)")) +
+    geom_point() +
+    facet_wrap(~state) +
+    theme_minimal() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.1, size = 9.5)) + 
+
+    labs(title = paste("K-means Cluster:", variable),
+         x = "Year", y = variable)
+
+  ggsave(paste0("Kmeans_Clustering_", variable, ".png"), plot = k_p, device = "png")
+  print(k_p)
+}
+
+
+
+
+
+
+
+
+
+```
